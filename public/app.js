@@ -153,7 +153,7 @@ const Tabs = (props) => (
 )
 
 const Thread = (props) => (
-  <div className='ui center algined basic segment'>
+  <div className='ui center aligned basic segment'>
     <MessageList
       messages={props.thread.messages}
       onClick={props.onMessageClick}
@@ -163,6 +163,8 @@ const Thread = (props) => (
     />
   </div>
 );
+
+
 
 const TextFieldSubmit = (props) => {
   let input;
@@ -188,14 +190,14 @@ const TextFieldSubmit = (props) => {
   );
 };
 
-const MessageList = (props) => {
+const MessageList = (props) => (
   <div className='ui comments'>
   {
     props.messages.map((m, index) => (
       <div
         className='comment'
         key={index}
-        onclick={() => props.onClick(m.id)}
+        onClick={() => props.onClick(m.id)}
       >
         <div className='text'>
         {m.text}
@@ -205,10 +207,14 @@ const MessageList = (props) => {
     ))
   }
   </div>
-};
+);
+
+
+
+
 
 const ThreadDisplay = React.createClass({
-  componentDidMount() {
+  componentDidMount: function() {
     store.subscribe(() => this.forceUpdate());
   },
 
