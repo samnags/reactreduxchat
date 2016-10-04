@@ -92,7 +92,8 @@ function messagesReducer(state = [], action) {
   }
 }
 
-const store = Redux.createStore(reducer);
+const store = Redux.createStore(reducer, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+
 
 function deleteMessage(id) {
   return {
