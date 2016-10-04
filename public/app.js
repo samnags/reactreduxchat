@@ -1,24 +1,17 @@
-const App = () => (
-  <div className='ui segment'>
-    <ThreadTabs />
-    <ThreadDisplay />
-  </div>
-)
-
 const reducer = Redux.combineReducers({
-    activeThreadId: activeThreadIdReducer,
-    threads: threadReducer,
+  activeThreadId: activeThreadIdReducer,
+  threads: threadsReducer,
 });
 
 
 function activeThreadIdReducer(state = '1-fca2', action) {
+
   if (action.type === 'OPEN_THREAD') {
     return action.id
   } else {
     return state;
   }
 }
-
 
 function findThreadIndex(threads, action) {
   switch (action.type) {
@@ -37,7 +30,7 @@ function findThreadIndex(threads, action) {
   }
 }
 
-function threadReducer(state = [
+function threadsReducer(state = [
   {
     id: '1-fca2',
     title: 'Buzz Aldrin',
@@ -101,69 +94,58 @@ function messagesReducer(state = [], action) {
 
 const store = Redux.createStore(reducer);
 
-
-
-
-const ThreadTabs = React.createClass({
-  // ThreadTabs is communicating with the store and letting it's child components be presentational components
-  componentDidMount () {
-    store.subscribe(() => this.forceUpdate)
-  },
-
-  render() {
-    // ThreadTab container component set tabs through props.tabs
-    const state = store.getState();
-
-    const tabs = state.threads.map(t => (
-      {
-        title: t.title,
-        activer: t.id === state.activeThreadId,
-        id: t.id
-      }
-    ));
-    // by getting rid of this.props.tabs, our Tabs component is purely presentational
-    return (
-      <Tabs
-      tabs={tabs}
-      onClick={(id) => (
-        store.dispatch({
-          type: 'OPEN_THREAD',
-          id: id,
-        })
-      )}
-      />
-    );
-  },
-});
-
-const Tabs = (props) => (
-  <div className='ui top attached tabular menu'>
-  {
-    props.tabs.map((tab, index) => (
-      <div
-        key={index}
-        className={tab.active ? 'active item' : 'item'}
-        onClick={() => props.onClick(tab.id)}
-        >
-        {tab.title}
-      </div>
-    ))
-  }
+const App = () => (
+  <div className='ui segment'>
+    <ThreadTabs />
+    <ThreadDisplay />
   </div>
 )
 
-const Thread = (props) => (
-  <div className='ui center aligned basic segment'>
-    <MessageList
-      messages={props.thread.messages}
-      onClick={props.onMessageClick}
-    />
-    <TextFieldSubmit
-      onSubmit={props.onMessageSubmit}
-    />
+const Tabs = (props) => (
+  <div className='ui top attached tabular menu'>
+    {
+      props.tabs.map((tab, index) => (
+        <div
+          key={index}
+          className={tab.active ? 'active item' : 'item'}
+          onClick={() => props.onClick(tab.id)}
+        >
+          {tab.title}
+        </div>
+      ))
+    }
   </div>
 );
 
+
+const mapStateToTabsProps = (state) => {
+  const tabs = state.threads.map(t => (
+    {
+      title: t.title,
+      active: t.id === state.activeThreadId,
+      id: t.id,
+    }
+  ));
+  return {
+    tabs,
+  };
+};
+
+const mapDispatchToTabsProps = (dispatch) => (
+  {
+    onClick: (id) => (
+      dispatch({
+        type: 'OPEN_THREAD',
+        id: id,
+      })
+    ),
+  }
+);
+
+const ThreadTabs = ReactRedux.connect(
+  mapStateToTabsProps,
+  mapDispatchToTabsProps
+)(Tabs);
 
 
 const TextFieldSubmit = (props) => {
@@ -209,43 +191,67 @@ const MessageList = (props) => (
   </div>
 );
 
+const Thread = (props) => (
+  <div className='ui center aligned basic segment'>
+    <MessageList
+      messages={props.thread.messages}
+      onClick={props.onMessageClick}
+    />
+    <TextFieldSubmit
+      onSubmit={props.onMessageSubmit}
+    />
+  </div>
+);
+
+const mapStateToThreadProps = (state) => (
+  {
+    thread: state.threads.find(
+      t => t.id === state.activeThreadId
+    ),
+  }
+);
+
+
+const mapDispatchToThreadProps = (dispatch) => (
+  {
+    onMessageClick: (id) => (
+      dispatch({
+        type: 'DELETE_MESSAGE',
+        id: id,
+      })
+    ),
+    dispatch: dispatch,
+  }
+)
+
+const mergeThreadProps = (stateProps, dispatchProps) => (
+  {
+    ...stateProps,
+    ...dispatchProps,
+    onMessageSubmit: (text) => (
+      dispatchProps.dispatch({
+        type: 'ADD_MESSAGE',
+        text: text,
+        threadId: stateProps.thread.id,
+      })
+    ),
+  }
+);
+
+
+const ThreadDisplay = ReactRedux.connect(
+  mapStateToThreadProps,
+  mapDispatchToThreadProps,
+  mergeThreadProps
+)(Thread);
 
 
 
-
-const ThreadDisplay = React.createClass({
-  componentDidMount: function() {
-    store.subscribe(() => this.forceUpdate());
-  },
-
-  render: function () {
-    const state = store.getState();
-    const activeThreadId = state.activeThreadId;
-    const activeThread = state.threads.find(
-      t => t.id === activeThreadId
-    );
-    return (
-      <Thread
-        thread={activeThread}
-        onMessageClick={(id) => (
-          store.dispatch({
-            type: 'DELETE_MESSAGE',
-            id: id,
-          })
-        )}
-        onMessageSubmit={(text) => (
-          store.dispatch({
-            type: 'ADD_MESSAGE',
-            text: text,
-            threadId: activeThreadId
-          })
-        )}
-      />
-    );
-  },
-});
+// By wrapping the top-level component with Proveder, we can access store throughout.
 
 ReactDOM.render(
-  <App />,
+  <ReactRedux.Provider store={store}>
+    <App />
+  </ReactRedux.Provider>,
   document.getElementById('content')
 );
